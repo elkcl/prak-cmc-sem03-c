@@ -20,7 +20,7 @@ BraceWrapping:
   AfterFunction:   true
   AfterNamespace:  true
   AfterObjCDeclaration: false
-  AfterStruct:     false
+  AfterStruct:     true
   AfterUnion:      false
   BeforeCatch:     false
   BeforeElse:      false

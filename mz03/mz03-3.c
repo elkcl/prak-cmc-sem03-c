@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <math.h>
 
 enum CONSTANTS
 {
@@ -23,18 +22,18 @@ main(int argc, char **argv)
         fprintf(stderr, "Error: real number conversion failed\n");
         exit(1);
     }
-    long long init = curr * ROUND_COEFFICIENT;
+    long long init = (long long) (curr * ROUND_COEFFICIENT);
     for (int i = 2; i < argc; ++i) {
         errno = 0;
         end_ptr = NULL;
-        long double curr = strtold(argv[i], &end_ptr);
+        curr = strtold(argv[i], &end_ptr);
         if (errno || *end_ptr || end_ptr == argv[i]) {
             fprintf(stderr, "Error: real number conversion failed\n");
             exit(1);
         }
         init *= PERCENT;
         init *= (long long) PERCENT * ROUND_COEFFICIENT + (long long) (curr * ROUND_COEFFICIENT);
-        init /= (long long) ROUND_COEFFICIENT * PERCENT * ROUND_COEFFICIENT * PERCENT / 10;
+        init /= (long long) ROUND_COEFFICIENT * PERCENT * PERCENT / 10;
         if (init % 10 >= 5) {
             init += 10;
         }
@@ -42,6 +41,6 @@ main(int argc, char **argv)
     }
     long long ans_int = init / ROUND_COEFFICIENT;
     long long ans_frac = init % ROUND_COEFFICIENT;
-    printf("%Ld.%Ld\n", ans_int, ans_frac);
+    printf("%lld.%04lld\n", ans_int, ans_frac);
     return 0;
 }
