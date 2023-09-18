@@ -12,7 +12,7 @@ main(int argc, char **argv)
         char *str_end = NULL;
         errno = 0;
         long long curr = strtoll(argv[i], &str_end, 10);
-        if (errno || (curr == 0 && argv[i] == str_end)) {
+        if (errno || *str_end || str_end == argv[i]) {
             fprintf(stderr, "Error: conversion to integer failed\n");
             exit(1);
         }
