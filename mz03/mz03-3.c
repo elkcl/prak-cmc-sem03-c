@@ -5,7 +5,8 @@
 
 enum CONSTANTS
 {
-    ROUND_COEFFICIENT = 10000
+    ROUND_COEFFICIENT = 10000,
+    PERCENT = 100
 };
 
 int
@@ -17,11 +18,12 @@ main(int argc, char **argv)
     }
     errno = 0;
     char *end_ptr = NULL;
-    long double init = strtold(argv[1], &end_ptr);
+    long double curr = strtold(argv[1], &end_ptr);
     if (errno || *end_ptr || end_ptr == argv[1]) {
         fprintf(stderr, "Error: real number conversion failed\n");
         exit(1);
     }
+    long long init = curr * ROUND_COEFFICIENT;
     for (int i = 2; i < argc; ++i) {
         errno = 0;
         end_ptr = NULL;
@@ -30,12 +32,16 @@ main(int argc, char **argv)
             fprintf(stderr, "Error: real number conversion failed\n");
             exit(1);
         }
-        init *= 1 + 0.01 * curr;
-        init = roundl(init * ROUND_COEFFICIENT) / ROUND_COEFFICIENT;
+        init *= PERCENT;
+        init *= (long long) PERCENT * ROUND_COEFFICIENT + (long long) (curr * ROUND_COEFFICIENT);
+        init /= (long long) ROUND_COEFFICIENT * PERCENT * ROUND_COEFFICIENT * PERCENT / 10;
+        if (init % 10 >= 5) {
+            init += 10;
+        }
+        init /= 10;
     }
-    long long ans = llroundl(init * ROUND_COEFFICIENT);
-    long long ans_int = ans / ROUND_COEFFICIENT;
-    long long ans_frac = ans % ROUND_COEFFICIENT;
+    long long ans_int = init / ROUND_COEFFICIENT;
+    long long ans_frac = init % ROUND_COEFFICIENT;
     printf("%Ld.%Ld\n", ans_int, ans_frac);
     return 0;
 }
