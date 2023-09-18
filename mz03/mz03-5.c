@@ -22,7 +22,7 @@ dup_elem(struct Elem *head)
     if (errno || *eptr || eptr == head->str || (int32_t) num != num) {
         return head;
     }
-    if (INT32_MAX - 1 > num) {
+    if (INT32_MAX - 1 < num) {
         return head;
     }
     int new_str_length = snprintf(NULL, 0, "%ld", num + 1) + 1;
