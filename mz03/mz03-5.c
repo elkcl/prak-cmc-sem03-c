@@ -27,7 +27,7 @@ dup_elem(struct Elem *head)
     }
     int new_str_length = snprintf(NULL, 0, "%ld", num + 1) + 1;
     char *new_str = calloc(new_str_length, sizeof(new_str[0]));
-    sprintf(new_str, "%ld", num + 1);
+    snprintf(new_str, new_str_length, "%ld", num + 1);
     struct Elem *new_head = malloc(sizeof(*new_head));
     new_head->next = head;
     new_head->str = new_str;
