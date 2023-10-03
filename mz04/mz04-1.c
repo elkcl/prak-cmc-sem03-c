@@ -45,7 +45,7 @@ main(int argc, char **argv)
         buf[1] = (curr & BYTE1) >> SHIFT1;
         buf[2] = (curr & BYTE2) >> SHIFT2;
         buf[3] = (curr & BYTE3) >> SHIFT3;
-        if (write(out, buf, 4) == -1) {
+        if (write(out, buf, sizeof(buf)) == -1) {
             fprintf(stderr, "Error: couldn't write to file\n");
             exit(1);
         }

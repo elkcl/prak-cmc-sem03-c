@@ -24,11 +24,12 @@ main(int argc, char **argv)
         fprintf(stderr, "Error: couldn't open file\n");
         exit(1);
     }
-    long long buf = 0;
+    long long curr_num = 0;
     ssize_t cnt = 0;
+    off_t pos = 0;
     off_t curr_pos = -1;
     long long curr_ans = 0;
-    while ((cnt = read(in, &buf, sizeof(long long)))) {
+    while ((cnt = read(in, &curr_num, sizeof(long long)))) {
         if (cnt == -1) {
             fprintf(stderr, "Error: couldn't read from file\n");
             exit(1);
@@ -37,26 +38,24 @@ main(int argc, char **argv)
             fprintf(stderr, "Error: wrong input file format\n");
             exit(1);
         }
-        if (curr_pos == -1 || buf < curr_ans) {
-            curr_ans = buf;
-            curr_pos = lseek(in, 0, SEEK_CUR);
-            if (curr_pos == -1) {
-                fprintf(stderr, "Error: couldn't get position in file\n");
-                exit(1);
-            }
+        if (curr_pos == -1 || curr_num < curr_ans) {
+            curr_ans = curr_num;
+            curr_pos = pos;
         }
+        pos += sizeof(long long);
     }
-    if (lseek(in, curr_pos - sizeof(long long), SEEK_SET) == -1) {
+    if (curr_pos == -1) {
+        return 0;
+    }
+    if (lseek(in, curr_pos, SEEK_SET) == -1) {
         fprintf(stderr, "Error: couldn't set position in file\n");
         exit(1);
     }
-    if (curr_ans == LLONG_MIN) {
-        buf = 0;
-    } else {
-        buf = -buf;
+    if (curr_ans != LLONG_MIN) {
+        curr_ans = -curr_ans;
     }
 
-    if (write(in, &buf, sizeof(long long)) == -1) {
+    if (write(in, &curr_ans, sizeof(long long)) == -1) {
         fprintf(stderr, "Error: couldn't write to file\n");
         exit(1);
     }
