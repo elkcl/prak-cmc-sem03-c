@@ -1,12 +1,12 @@
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
+#include <asm-generic/errno-base.h> // EINTR
+#include <asm-generic/errno.h>      // EWOULDBLOCK, EAGAIN
+#include <stdio.h>                  // fprintf
+#include <string.h>                 // strerror
+#include <sys/types.h>              // size_t
+#include <fcntl.h>                  // open()
+#include <unistd.h>                 // close()
+#include <stdlib.h>                 // exit()
+#include <errno.h>                  // errno
 
 enum
 {
@@ -25,6 +25,23 @@ panic(char *err)
         fprintf(stderr, "Error: %s\n", err);
     }
     exit(1);
+}
+
+void
+write_all(int fd, const void *buf, size_t size)
+{
+    while (size > 0) {
+        ssize_t written = 0;
+        do {
+            errno = 0;
+            written = write(fd, buf, size);
+        } while (written == -1 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+        if (written == -1) {
+            panic("writing to file failed");
+        }
+        size -= written;
+        buf += written;
+    }
 }
 
 int
@@ -52,7 +69,7 @@ main(int argc, char **argv)
         panic("reading from file failed or file format incorrect");
     }
     if (cnt_read == 0) {
-        return 0;
+        goto CLOSE_AND_EXIT;
     }
     for (long long i = 1; i < n; ++i) {
         double curr = 0;
@@ -60,17 +77,20 @@ main(int argc, char **argv)
         if (cnt_read && cnt_read != sizeof(curr)) {
             panic("reading from file failed or file format incorrect");
         }
+        if (cnt_read == 0) {
+            goto CLOSE_AND_EXIT;
+        }
         if (lseek(file, i * sizeof(double), SEEK_SET) == -1) {
             panic("seeking failed");
         }
         curr -= prev;
-        ssize_t cnt_written = write(file, &curr, sizeof(double));
-        if (cnt_read == 0) {
-            break;
-        }
+        write_all(file, &curr, sizeof(double));
+        prev = curr;
     }
 
+CLOSE_AND_EXIT:;
     if (close(file) == -1) {
         panic("closing file failed");
     }
+    return 0;
 }
