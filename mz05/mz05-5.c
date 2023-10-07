@@ -117,6 +117,10 @@ relativize_path(const char *path1, const char *path2)
     for (size_t i = 0; split1[i] != NULL; ++i) {
         ++len1;
     }
+    if (len1 > 0) {
+        --len1;
+        split1[len1] = NULL;
+    }
     for (size_t i = 0; split2[i] != NULL; ++i) {
         ++len2;
     }
@@ -174,12 +178,4 @@ relativize_path(const char *path1, const char *path2)
     free(split1);
     free(split2);
     return ans;
-}
-
-int
-main(int argc, char **argv)
-{
-    char *ans = relativize_path(argv[1], argv[2]);
-    puts(ans);
-    free(ans);
 }
