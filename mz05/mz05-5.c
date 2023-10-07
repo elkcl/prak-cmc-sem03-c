@@ -26,6 +26,39 @@ panic(char *err)
 
 typedef const char *cptr_t;
 
+size_t
+partlen(const char *s)
+{
+    size_t n = 0;
+    while (s[n] != '\0' && s[n] != '/') {
+        ++n;
+    }
+    return n;
+}
+
+int
+partcmp(const char *a, const char *b)
+{
+    size_t n = 0;
+    while (a[n] != '\0' && a[n] != '/' && b[n] != '\0' && b[n] != '/' && a[n] == b[n]) {
+        ++n;
+    }
+    if ((a[n] == '\0' || a[n] == '/') && (b[n] == '\0' || b[n] == '/')) {
+        return 0;
+    }
+    if (a[n] == '\0' || a[n] == '/') {
+        return -1;
+    }
+    if (b[n] == '\0' || b[n] == '/') {
+        return 1;
+    }
+    if (a[n] < b[n]) {
+        return -1;
+    } else {
+        return 1;
+    }
+}
+
 cptr_t *
 split_path(const char *path)
 {
@@ -55,9 +88,9 @@ split_path(const char *path)
     }
     size_t last = 0;
     for (size_t i = 0; i < n; ++i) {
-        if (strcmp(ans[i], curr) == 0) {
+        if (partcmp(ans[i], curr) == 0) {
             continue;
-        } else if (strcmp(ans[i], prev) == 0) {
+        } else if (partcmp(ans[i], prev) == 0) {
             if (last > 0) {
                 --last;
             }
@@ -87,7 +120,7 @@ relativize_path(const char *path1, const char *path2)
     for (size_t i = 0; split2[i] != NULL; ++i) {
         ++len2;
     }
-    for (size_t i = 0; i < len1 && i < len2 && split1[i] == split2[i]; ++i) {
+    for (size_t i = 0; i < len1 && i < len2 && partcmp(split1[i], split2[i]) == 0; ++i) {
         ++pref;
     }
     size_t len_ans = 0;
@@ -99,7 +132,7 @@ relativize_path(const char *path1, const char *path2)
     }
     if (len2 - pref != 0) {
         for (size_t i = pref; i < len2; ++i) {
-            len_ans += strlen(split2[i]) + 1;
+            len_ans += partlen(split2[i]) + 1;
         }
     }
     if (len1 - pref != 0 && len2 - pref != 0) {
@@ -116,6 +149,7 @@ relativize_path(const char *path1, const char *path2)
             ans[j] = '.';
             ans[j + 1] = '.';
             ans[j + 2] = '/';
+            j += 3;
         }
         ans[j] = '.';
         ans[j + 1] = '.';
@@ -128,12 +162,12 @@ relativize_path(const char *path1, const char *path2)
     }
     if (len2 - pref != 0) {
         for (size_t i = pref; i < len2 - 1; ++i) {
-            size_t curr_len = strlen(split2[i]);
+            size_t curr_len = partlen(split2[i]);
             memcpy(ans + j, split2[i], curr_len);
             ans[j + curr_len] = '/';
             j += curr_len + 1;
         }
-        size_t curr_len = strlen(split2[len2 - 1]);
+        size_t curr_len = partlen(split2[len2 - 1]);
         memcpy(ans + j, split2[len2 - 1], curr_len);
         j += curr_len;
     }
