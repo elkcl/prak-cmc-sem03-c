@@ -32,38 +32,35 @@ panic(char *err)
 }
 
 void
-print_paths(size_t init_dir_len, const char *path, size_t path_len, off_t max_sz, int depth)
+print_paths(size_t init_dir_len, const char *path, off_t max_sz, int depth)
 {
     if (depth > MAX_REC_DEPTH) {
         return;
     }
     DIR *dir = opendir(path);
     if (dir == NULL) {
-        panic("couldn't open directory");
+        return;
     }
     struct dirent *curr = NULL;
     while ((curr = readdir(dir)) != NULL) {
-        size_t len = strlen(curr->d_name);
         if (strcmp(curr->d_name, CURR) == 0) {
             continue;
         }
         if (strcmp(curr->d_name, PREV) == 0) {
             continue;
         }
-        char *full_name = calloc(path_len + len + 2, sizeof(full_name[0]));
-        if (full_name == NULL) {
+        char *full_name = NULL;
+        size_t full_len = asprintf(&full_name, "%s/%s", path, curr->d_name);
+        if (full_len == -1) {
             panic("couldn't allocate memory");
         }
-        memcpy(full_name, path, path_len * sizeof(full_name[0]));
-        full_name[path_len] = '/';
-        memcpy(full_name + path_len + 1, curr->d_name, (len + 1) * sizeof(full_name[0]));
         struct stat info = {};
         if (lstat(full_name, &info) == -1) {
             free(full_name);
             continue;
         }
         if (S_ISDIR(info.st_mode)) {
-            print_paths(init_dir_len, full_name, path_len + len + 1, max_sz, depth + 1);
+            print_paths(init_dir_len, full_name, max_sz, depth + 1);
         } else if (S_ISREG(info.st_mode)) {
             if (access(full_name, R_OK) != 0) {
                 free(full_name);
@@ -93,5 +90,5 @@ main(int argc, char **argv)
         panic("incorrect argument format");
     }
     size_t init_dir_len = strlen(argv[PATH_ARG]);
-    print_paths(init_dir_len, argv[PATH_ARG], init_dir_len, max_sz, 1);
+    print_paths(init_dir_len, argv[PATH_ARG], max_sz, 1);
 }
