@@ -7,14 +7,15 @@
 #include <sys/stat.h>  // stat
 #include <dirent.h>    // opendir()
 #include <unistd.h>    // access()
+#include <stdbool.h>   // bool
 
-const char ext[] = ".exe";
+const char EXT[] = ".exe";
 
 enum
 {
     ARGC = 2,
     DIR_ARG = 1,
-    EXT_LEN = sizeof(ext) / sizeof(ext[0]) - 1
+    EXT_LEN = sizeof(EXT) / sizeof(EXT[0]) - 1
 };
 
 void
@@ -28,6 +29,15 @@ panic(char *err)
     exit(1);
 }
 
+bool
+check_suffix(const char *str, size_t str_len, const char *suff, size_t suff_len)
+{
+    if (suff_len > str_len) {
+        return false;
+    }
+    return strcmp(str + str_len - suff_len, suff) == 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -38,20 +48,16 @@ main(int argc, char **argv)
     if (dir == NULL) {
         panic("couldn't open directory");
     }
-    size_t dir_len = strlen(argv[DIR_ARG]);
     int cnt = 0;
     struct dirent *curr = NULL;
     while ((curr = readdir(dir)) != NULL) {
         size_t len = strlen(curr->d_name);
-        char *full_name = calloc(dir_len + len + 2, sizeof(full_name[0]));
-        memcpy(full_name, argv[DIR_ARG], dir_len * sizeof(full_name[0]));
-        full_name[dir_len] = '/';
-        memcpy(full_name + dir_len + 1, curr->d_name, len * sizeof(full_name[0]));
-        full_name[dir_len + len + 2] = '\0';
-        if (full_name == NULL) {
+        char *full_name = NULL;
+        size_t full_len = asprintf(&full_name, "%s/%s", argv[DIR_ARG], curr->d_name);
+        if (full_len == -1) {
             panic("couldn't allocate memory");
         }
-        if (strcmp(ext, curr->d_name + len - EXT_LEN) != 0) {
+        if (!check_suffix(curr->d_name, len, EXT, EXT_LEN)) {
             continue;
         }
         if (access(full_name, X_OK) != 0) {
