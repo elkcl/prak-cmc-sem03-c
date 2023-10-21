@@ -3,7 +3,7 @@ project(prak_cmc_sem03_c C)
 
 set(CMAKE_C_STANDARD 23)
 
-set(CMAKE_C_FLAGS "-O2 -Wall -Werror -Wno-pointer-sign -Werror=vla -lm")
+set(CMAKE_C_FLAGS "-Wall -Werror -Wno-pointer-sign -Werror=vla -lm -fsanitize=address,undefined -ftrapv")
 
 add_executable(test test.c)
 add_executable(mz01-1 mz01/mz01-1.c)
@@ -17,3 +17,6 @@ add_executable(mz03-2 mz03/mz03-2.c)
 add_executable(mz03-3 mz03/mz03-3.c)
 add_executable(mz03-4 mz03/mz03-4.c)
 add_executable(mz03-5 mz03/mz03-5.c)
+
+add_executable(nikita-up05-5 nikita-up05-5.c)
+add_executable(ira-up04-4 ira-up04-4.c)

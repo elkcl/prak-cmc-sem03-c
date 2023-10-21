@@ -28,8 +28,9 @@ panic(char *err)
 }
 
 void
-write_all(int fd, const void *buf, size_t size)
+write_all(int fd, const void *buf_v, size_t size)
 {
+    const char *buf = buf_v;
     while (size > 0) {
         ssize_t written = 0;
         do {

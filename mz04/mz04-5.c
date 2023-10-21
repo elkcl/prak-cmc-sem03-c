@@ -36,8 +36,9 @@ panic(char *err)
 }
 
 ssize_t
-read_all(int fd, void *buf, size_t size)
+read_all(int fd, void *buf_v, size_t size)
 {
+    char *buf = buf_v;
     ssize_t remaining = size;
     while (remaining > 0) {
         ssize_t cnt_read = 0;
@@ -58,8 +59,9 @@ read_all(int fd, void *buf, size_t size)
 }
 
 void
-write_all(int fd, const void *buf, size_t size)
+write_all(int fd, const void *buf_v, size_t size)
 {
+    const char *buf = buf_v;
     while (size > 0) {
         ssize_t written = 0;
         do {

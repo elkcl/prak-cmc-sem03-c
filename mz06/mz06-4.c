@@ -50,7 +50,7 @@ print_paths(size_t init_dir_len, const char *path, off_t max_sz, int depth)
             continue;
         }
         char *full_name = NULL;
-        size_t full_len = asprintf(&full_name, "%s/%s", path, curr->d_name);
+        int full_len = asprintf(&full_name, "%s/%s", path, curr->d_name);
         if (full_len == -1) {
             panic("couldn't allocate memory");
         }

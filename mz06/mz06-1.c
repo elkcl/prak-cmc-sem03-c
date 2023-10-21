@@ -53,7 +53,7 @@ main(int argc, char **argv)
     while ((curr = readdir(dir)) != NULL) {
         size_t len = strlen(curr->d_name);
         char *full_name = NULL;
-        size_t full_len = asprintf(&full_name, "%s/%s", argv[DIR_ARG], curr->d_name);
+        int full_len = asprintf(&full_name, "%s/%s", argv[DIR_ARG], curr->d_name);
         if (full_len == -1) {
             panic("couldn't allocate memory");
         }
