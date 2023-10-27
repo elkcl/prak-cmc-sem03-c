@@ -1,3 +1,4 @@
+#include <linux/limits.h>
 #include <stddef.h>    // size_t
 #include <stdio.h>     // fprintf
 #include <string.h>    // strerror
@@ -38,6 +39,25 @@ check_suffix(const char *str, size_t str_len, const char *suff, size_t suff_len)
     return strcmp(str + str_len - suff_len, suff) == 0;
 }
 
+bool
+check_file(const char *name, size_t len)
+{
+    if (!check_suffix(name, len, EXT, EXT_LEN)) {
+        return false;
+    }
+    if (access(name, X_OK) != 0) {
+        return false;
+    }
+    struct stat info = {};
+    if (stat(name, &info) == -1) {
+        return false;
+    }
+    if (!S_ISREG(info.st_mode)) {
+        return false;
+    }
+    return true;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -50,28 +70,15 @@ main(int argc, char **argv)
     }
     int cnt = 0;
     struct dirent *curr = NULL;
+    char full_name[PATH_MAX];
     while ((curr = readdir(dir)) != NULL) {
-        size_t len = strlen(curr->d_name);
-        char *full_name = NULL;
-        int full_len = asprintf(&full_name, "%s/%s", argv[DIR_ARG], curr->d_name);
-        if (full_len == -1) {
-            panic("couldn't allocate memory");
+        size_t full_len = snprintf(full_name, PATH_MAX, "%s/%s", argv[DIR_ARG], curr->d_name);
+        if (full_len >= PATH_MAX) {
+            panic("path too long");
         }
-        if (!check_suffix(curr->d_name, len, EXT, EXT_LEN)) {
-            continue;
+        if (check_file(full_name, full_len)) {
+            ++cnt;
         }
-        if (access(full_name, X_OK) != 0) {
-            continue;
-        }
-        struct stat info = {};
-        if (stat(full_name, &info) == -1) {
-            continue;
-        }
-        if (!S_ISREG(info.st_mode)) {
-            continue;
-        }
-        ++cnt;
-        free(full_name);
     }
     printf("%d\n", cnt);
 
