@@ -174,7 +174,7 @@ main(int argc, char **argv)
     DIR *init_dir = opendir(argv[1]);
     size_t sz;
     sscanf(argv[2], "%zu", &sz);
-    char buf[PATH_MAX];
+    char buf[PATH_MAX] = {0};
     ssize_t ans = getcwd2(dirfd(init_dir), buf, sz);
     printf("%ld\n", ans);
     if (ans != -1) {
