@@ -1,13 +1,9 @@
-#include <asm-generic/errno-base.h>
-#include <ctype.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <inttypes.h>
+#include <ctype.h>  // isspace()
+#include <stddef.h> // ssize_t
+#include <stdio.h>  // fprintf()
+#include <string.h> // strerror
+#include <errno.h>  // errno
+#include <stdlib.h> // exit()
 
 enum
 {
@@ -72,7 +68,12 @@ parse_num(const char *str, ssize_t n)
                     return -1;
                 }
             }
-        } else if (str[i] != '0') {
+        } else if (str[i] == '0') {
+            if (__builtin_mul_overflow(ans, BASE, &ans)) {
+                errno = ERANGE;
+                return -1;
+            }
+        } else {
             errno = EINVAL;
             return -1;
         }
@@ -88,7 +89,7 @@ main(void)
     ssize_t len = 0;
     while ((len = getline(&line, &buf_size, stdin)) != -1) {
         char *from = line;
-        char *to = line;
+        char *to;
         while (*from != '\0' && isspace(*from)) {
             ++from;
         }
