@@ -1,3 +1,4 @@
+#include <asm-generic/errno-base.h>
 #include <ctype.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -7,6 +8,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <inttypes.h>
+
+enum
+{
+    BASE = 3
+};
 
 void
 panic(char *err)
@@ -23,36 +29,52 @@ long long
 parse_num(const char *str, ssize_t n)
 {
     long long ans = 0;
-    long long curr = 1;
-    bool invalid_curr = false;
-    for (ssize_t i = n - 1; i >= 0; --i) {
+    for (ssize_t i = 0; i < n; ++i) {
         if (str[i] == '1') {
-            if (invalid_curr) {
-                errno = ERANGE;
-                return -1;
-            }
-            bool over = __builtin_saddll_overflow(ans, curr, &ans);
-            if (over) {
-                errno = ERANGE;
-                return -1;
+            if (ans < 0) {
+                ++ans;
+                if (__builtin_mul_overflow(ans, BASE, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
+                if (__builtin_sub_overflow(ans, BASE - 1, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
+            } else {
+                if (__builtin_mul_overflow(ans, BASE, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
+                if (__builtin_add_overflow(ans, 1, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
             }
         } else if (str[i] == 'a') {
-            if (invalid_curr) {
-                errno = ERANGE;
-                return -1;
-            }
-            bool over = __builtin_ssubll_overflow(ans, curr, &ans);
-            if (over) {
-                errno = ERANGE;
-                return -1;
+            if (ans > 0) {
+                --ans;
+                if (__builtin_mul_overflow(ans, BASE, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
+                if (__builtin_add_overflow(ans, BASE - 1, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
+            } else {
+                if (__builtin_mul_overflow(ans, BASE, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
+                if (__builtin_sub_overflow(ans, 1, &ans)) {
+                    errno = ERANGE;
+                    return -1;
+                }
             }
         } else if (str[i] != '0') {
             errno = EINVAL;
             return -1;
-        }
-        bool over = __builtin_smulll_overflow(curr, 3, &curr);
-        if (over) {
-            invalid_curr = true;
         }
     }
     return ans;
