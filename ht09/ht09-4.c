@@ -95,15 +95,16 @@ b64u_decode(const char *str, uint8_t **p_data, size_t *p_size)
             if (b64u_single_decode(str[i]) == (uint16_t) -1) {
                 return false;
             }
+            ++char_cnt;
         }
-        ++char_cnt;
     }
-    if (char_cnt % B64U_CLUSTER_CHARS == 1) {
+    size_t leftover = char_cnt % B64U_CLUSTER_CHARS;
+    if (leftover == 1) {
         return false;
     }
     size_t size = (char_cnt / B64U_CLUSTER_CHARS) * B64U_CLUSTER_BYTES;
-    if (char_cnt % B64U_CLUSTER_CHARS > 0) {
-        size += char_cnt % B64U_CLUSTER_CHARS - 1;
+    if (leftover > 0) {
+        size += leftover - 1;
     }
     uint8_t *data = calloc(size + 1, sizeof(*data));
     *p_data = data;
@@ -112,6 +113,33 @@ b64u_decode(const char *str, uint8_t **p_data, size_t *p_size)
         return false;
     }
     data[size] = 0;
-
+    size_t ci = 0;
+    uint8_t cluster[B64U_CLUSTER_CHARS] = {};
+    for (size_t i = 0; i < char_cnt / B64U_CLUSTER_CHARS; ++i) {
+        size_t di = i * B64U_CLUSTER_BYTES;
+        for (size_t j = 0; j < B64U_CLUSTER_CHARS; ++j) {
+            while (isspace(str[ci])) {
+                ++ci;
+            }
+            cluster[j] = b64u_single_decode(str[ci]);
+            ++ci;
+        }
+        data[di] = cluster[0] << 2 | cluster[1] >> 4;
+        data[di + 1] = cluster[1] << 4 | cluster[2] >> 2;
+        data[di + 2] = cluster[2] << 6 | cluster[3];
+    }
+    for (size_t j = 0; j < leftover; ++j) {
+        while (isspace(str[ci])) {
+            ++ci;
+        }
+        cluster[j] = b64u_single_decode(str[ci]);
+        ++ci;
+    }
+    if (leftover == 3) {
+        data[size - 2] = cluster[0] << 2 | cluster[1] >> 4;
+        data[size - 1] = cluster[1] << 4 | cluster[2] >> 2;
+    } else if (leftover == 2) {
+        data[size - 1] = cluster[0] << 2 | cluster[1] >> 4;
+    }
     return true;
 }
