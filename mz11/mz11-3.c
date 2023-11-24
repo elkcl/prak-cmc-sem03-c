@@ -9,7 +9,8 @@
 enum
 {
     INPUT_SIZE = 8,
-    BASE = 10
+    BASE = 10,
+    PROC_CNT = 3
 };
 
 void
@@ -27,7 +28,7 @@ void
 handle_line(int id)
 {
     char buf[INPUT_SIZE];
-    if (read(STDIN_FILENO, buf, INPUT_SIZE) != INPUT_SIZE) {
+    if (read(STDIN_FILENO, buf, sizeof(buf)) != sizeof(buf)) {
         panic("read failed");
     }
     buf[INPUT_SIZE - 1] = '\0';
@@ -40,23 +41,13 @@ handle_line(int id)
 int
 main(void)
 {
-    pid_t pid1 = fork();
-    if (pid1 < 0) {
-        panic("couldn't fork");
-    } else if (pid1 == 0) {
-        handle_line(1);
-    }
-    pid_t pid2 = fork();
-    if (pid2 < 0) {
-        panic("couldn't fork");
-    } else if (pid2 == 0) {
-        handle_line(2);
-    }
-    pid_t pid3 = fork();
-    if (pid3 < 0) {
-        panic("couldn't fork");
-    } else if (pid3 == 0) {
-        handle_line(3);
+    for (int i = 0; i < PROC_CNT; ++i) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            panic("couldn't fork");
+        } else if (pid == 0) {
+            handle_line(i + 1);
+        }
     }
     while (wait(NULL) > 0) {
     }
