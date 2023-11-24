@@ -12,8 +12,8 @@ const char CODE1[] = "#!/usr/bin/python3\n"
                      "import os\n"
                      "print(";
 const char CODE2[] = ")\n"
-                     "os.remove(";
-const char CODE3[] = ")\n";
+                     "os.remove('";
+const char CODE3[] = "')\n";
 
 void
 panic(char *err)
@@ -81,7 +81,7 @@ main(int argc, char *argv[])
     if (rd == -1) {
         panic("open failed");
     }
-    char buf[] = "01234567890123456789.py";
+    unsigned char buf[] = "01234567890123456789.py";
     read_all(rd, buf, 20);
     for (int i = 0; i < 20; ++i) {
         buf[i] = buf[i] % 10 + '0';
