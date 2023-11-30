@@ -1,19 +1,21 @@
 #include <signal.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
 
 void
-panic(char *err)
+handler(int sig)
 {
-    if (errno) {
-        dprintf(STDERR_FILENO, "Error: %s\nLast errno: %s\n", err, strerror(errno));
-    } else {
-        dprintf(STDERR_FILENO, "Error: %s\n", err);
+    if (sig == SIGUSR1) {
+        raise(SIGKILL);
+    }
+}
+
+void
+fail(void)
+{
+    kill(0, SIGUSR1);
+    while (wait(NULL) > 0) {
     }
     _exit(1);
 }
@@ -21,6 +23,12 @@ panic(char *err)
 int
 main(int argc, char *argv[])
 {
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGUSR1);
+    if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
+        _exit(1);
+    }
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
         _exit(1);
     }
@@ -42,15 +50,19 @@ main(int argc, char *argv[])
             curr_fd[1] = STDOUT_FILENO;
         } else {
             if (pipe2(curr_fd, O_CLOEXEC) == -1) {
-                kill(0, SIGKILL);
-                _exit(1);
+                fail();
             }
         }
         pid_t pid = fork();
         if (pid < 0) {
-            kill(0, SIGKILL);
-            _exit(1);
+            fail();
         } else if (pid == 0) {
+            if (sigaction(SIGUSR1, &(struct sigaction){.sa_handler = handler}, NULL) == -1) {
+                _exit(1);
+            }
+            if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) {
+                _exit(1);
+            }
             if (last_fd[0] != -1) {
                 if (dup2(last_fd[0], STDIN_FILENO) == -1) {
                     _exit(1);
@@ -64,12 +76,10 @@ main(int argc, char *argv[])
         }
         if (last_fd[0] != -1) {
             if (close(last_fd[0]) == -1) {
-                kill(0, SIGKILL);
-                _exit(1);
+                fail();
             }
             if (close(last_fd[1]) == -1) {
-                kill(0, SIGKILL);
-                _exit(1);
+                fail();
             }
         }
         last_fd[0] = curr_fd[0];

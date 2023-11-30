@@ -8,12 +8,6 @@
 #include <errno.h>
 #include <string.h>
 
-enum
-{
-    EXIT_CODE = 42,
-    MODE = 0660
-};
-
 void
 panic(char *err)
 {
