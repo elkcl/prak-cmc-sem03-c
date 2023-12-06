@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -15,6 +16,12 @@ const char CODE2[] = ")\n"
                      "os.remove('";
 const char CODE3[] = "')\n";
 
+enum
+{
+    MODE = 0700,
+    RAND_CNT = 20,
+};
+
 void
 panic(char *err)
 {
@@ -24,47 +31,6 @@ panic(char *err)
         dprintf(STDERR_FILENO, "Error: %s\n", err);
     }
     _exit(1);
-}
-
-ssize_t
-read_all(int fd, void *buf_v, size_t size)
-{
-    char *buf = buf_v;
-    ssize_t remaining = size;
-    while (remaining > 0) {
-        ssize_t cnt_read = 0;
-        do {
-            errno = 0;
-            cnt_read = read(fd, buf, remaining);
-        } while (cnt_read == -1 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-        if (cnt_read == -1) {
-            panic("reading from file failed");
-        }
-        if (cnt_read == 0) {
-            break;
-        }
-        remaining -= cnt_read;
-        buf += cnt_read;
-    }
-    return size - remaining;
-}
-
-void
-write_all(int fd, const void *buf_v, size_t size)
-{
-    const char *buf = buf_v;
-    while (size > 0) {
-        ssize_t written = 0;
-        do {
-            errno = 0;
-            written = write(fd, buf, size);
-        } while (written == -1 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-        if (written == -1) {
-            panic("writing to file failed");
-        }
-        size -= written;
-        buf += written;
-    }
 }
 
 int
@@ -77,32 +43,52 @@ main(int argc, char *argv[])
             tmpdir = "/tmp";
         }
     }
-    int rd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
-    if (rd == -1) {
-        panic("open failed");
+    FILE *rd = fopen("/dev/urandom", "rb");
+    if (rd == NULL) {
+        panic("fopen failed");
     }
     unsigned char buf[] = "01234567890123456789.py";
-    read_all(rd, buf, 20);
+    if (fread(buf, sizeof(buf[0]), RAND_CNT, rd) != RAND_CNT) {
+        panic("fread failed");
+    }
     for (int i = 0; i < 20; ++i) {
         buf[i] = buf[i] % 10 + '0';
+    }
+    if (fclose(rd) < 0) {
+        panic("fclose failed");
     }
     char path[PATH_MAX];
     size_t path_len = 0;
     if ((path_len = snprintf(path, PATH_MAX, "%s/%s", tmpdir, buf)) >= PATH_MAX) {
         panic("path too long");
     }
-    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0770);
-    write_all(fd, CODE1, sizeof(CODE1) - 1);
+    FILE *file = fopen(path, "w");
+    if (fchmod(fileno(file), MODE) == -1) {
+        panic("chmod failed");
+    }
+    if (fputs(CODE1, file) < 0) {
+        panic("fputs failed");
+    }
     for (int i = 1; i < argc; ++i) {
-        write_all(fd, argv[i], strlen(argv[i]));
+        if (fputs(argv[i], file) < 0) {
+            panic("fputs failed");
+        }
         if (i != argc - 1) {
-            write_all(fd, "*", 1);
+            if (fputc('*', file) < 0) {
+                panic("fputc failed");
+            }
         }
     }
-    write_all(fd, CODE2, sizeof(CODE2) - 1);
-    write_all(fd, path, path_len);
-    write_all(fd, CODE3, sizeof(CODE3) - 1);
-    if (close(fd) == -1) {
+    if (fputs(CODE2, file) < 0) {
+        panic("fputs failed");
+    }
+    if (fputs(path, file) < 0) {
+        panic("fputs failed");
+    }
+    if (fputs(CODE3, file) < 0) {
+        panic("fputs failed");
+    }
+    if (fclose(file) < 0) {
         panic("close failed");
     }
     execlp(path, path, NULL);

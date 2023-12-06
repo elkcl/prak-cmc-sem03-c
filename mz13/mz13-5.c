@@ -53,7 +53,7 @@ ping_pong_player(int id, int lim, int fd_out[static 2], int fd_in[static 2])
             if (x >= lim) {
                 break;
             }
-            printf("%d %d\n", id, x);
+            dprintf(STDOUT_FILENO, "%d %d\n", id, x);
             ++x;
             if (x >= lim) {
                 break;
@@ -104,5 +104,5 @@ main(int argc, char *argv[])
     }
     while (wait(NULL) > 0) {
     }
-    puts("Done");
+    dprintf(STDOUT_FILENO, "Done\n");
 }
