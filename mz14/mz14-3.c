@@ -1,4 +1,3 @@
-#include <bits/wait.h>
 #include <errno.h>
 #include <linux/limits.h>
 #include <stdio.h>
@@ -85,4 +84,5 @@ main(int argc, char *argv[])
             }
         }
     }
+    dprintf(STDOUT_FILENO, "%d\n", ans);
 }
