@@ -59,14 +59,11 @@ main(int argc, char *argv[])
     dprintf(STDOUT_FILENO, "%d\n", getpid());
     setbuf(stdin, NULL);
     int ans = 0, curr = 0;
-    long long temp = 0;
     while (scanf("%d", &curr) == 1) {
         if (mode == ADD) {
-            temp = 1ll * ans + curr;
-            ans = temp;
+            __builtin_add_overflow(ans, curr, &ans);
         } else if (mode == MUL) {
-            temp = 1ll * ans * curr;
-            ans = temp;
+            __builtin_mul_overflow(ans, curr, &ans);
         }
         dprintf(STDOUT_FILENO, "%d\n", ans);
     }
